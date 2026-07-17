@@ -3,7 +3,10 @@
 ; baixa o pacote oficial da Microsoft e o instala em modo silencioso.
 
 #define MyAppName "DevInbox"
-#define MyAppVersion "1.0.0"
+; A versão pode ser injetada pela linha de comando (ISCC /DMyAppVersion=x.y.z), usada pelo CI.
+#ifndef MyAppVersion
+  #define MyAppVersion "1.0.0"
+#endif
 #define MyAppPublisher "Rob Silva"
 #define MyAppExeName "DevInbox.exe"
 #define PublishDir "..\src\DevInbox.App\bin\Release\net10.0-windows10.0.19041.0\win-x64\publish"
