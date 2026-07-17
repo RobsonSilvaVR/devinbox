@@ -1,0 +1,67 @@
+name: Release do instalador
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Versão do release, sem o "v" (ex.: 1.0.0)'
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  build-installer:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configurar .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Determinar versão
+        id: version
+        shell: pwsh
+        run: |
+          if ('${{ github.event_name }}' -eq 'workflow_dispatch') {
+            $v = '${{ github.event.inputs.version }}'.Trim()
+          } else {
+            $v = '${{ github.ref_name }}'.TrimStart('v')
+          }
+          if ([string]::IsNullOrWhiteSpace($v)) { throw 'Versão não informada.' }
+          "value=$v" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          Write-Host "Versão do release: $v"
+
+      - name: Testes
+        run: dotnet test tests/DevInbox.Core.Tests/DevInbox.Core.Tests.csproj -c Release
+
+      - name: Publicar app (framework-dependent, single-file)
+        run: dotnet publish src/DevInbox.App -c Release -r win-x64 --self-contained false -p:PublishSingleFile=true -p:Version=${{ steps.version.outputs.value }}
+
+      - name: Instalar Inno Setup
+        run: choco install innosetup --no-progress -y
+
+      - name: Compilar instalador
+        shell: pwsh
+        run: |
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" /DMyAppVersion=${{ steps.version.outputs.value }} installer\DevInbox.iss
+
+      - name: Publicar arquivo como artefato do build
+        uses: actions/upload-artifact@v4
+        with:
+          name: DevInbox-Setup-${{ steps.version.outputs.value }}
+          path: installer/output/DevInbox-Setup-${{ steps.version.outputs.value }}.exe
+
+      - name: Publicar release no GitHub
+        uses: softprops/action-gh-release@v2
+        with:
+          name: DevInbox ${{ steps.version.outputs.value }}
+          tag_name: ${{ github.event_name == 'workflow_dispatch' && format('v{0}', steps.version.outputs.value) || github.ref_name }}
+          files: installer/output/DevInbox-Setup-${{ steps.version.outputs.value }}.exe
+          generate_release_notes: true
