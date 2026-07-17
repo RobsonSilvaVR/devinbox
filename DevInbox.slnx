@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/DevInbox.App/DevInbox.App.csproj" />
+    <Project Path="src/DevInbox.Core/DevInbox.Core.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/DevInbox.Core.Tests/DevInbox.Core.Tests.csproj" />
+  </Folder>
+</Solution>

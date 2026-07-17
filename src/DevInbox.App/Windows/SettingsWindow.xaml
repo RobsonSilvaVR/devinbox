@@ -1,0 +1,74 @@
+<Window x:Class="DevInbox.App.Windows.SettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Configurações — DevInbox"
+        Width="470" SizeToContent="Height"
+        ResizeMode="NoResize"
+        Style="{StaticResource GitHubWindow}"
+        Icon="/Assets/app.ico"
+        WindowStartupLocation="CenterScreen">
+    <StackPanel Margin="18">
+        <TextBlock Text="Intervalo de verificação (segundos)" />
+        <TextBox Text="{Binding PollIntervalSeconds, UpdateSourceTrigger=PropertyChanged}"
+                 Width="90" HorizontalAlignment="Left" Margin="0,6,0,0" />
+
+        <TextBlock Text="Aparência" FontWeight="Bold" Margin="0,16,0,6" />
+        <StackPanel Orientation="Horizontal">
+            <TextBlock Text="Tema: " VerticalAlignment="Center" />
+            <ComboBox Width="200"
+                      ItemsSource="{Binding AvailableThemes}"
+                      SelectedItem="{Binding SelectedTheme}" />
+        </StackPanel>
+
+        <TextBlock Text="Notificações" FontWeight="Bold" Margin="0,16,0,6" />
+        <CheckBox Content="Comentário novo no meu PR" IsChecked="{Binding NewComment}" Margin="0,3,0,0" />
+        <CheckBox Content="Review solicitado para mim" IsChecked="{Binding ReviewRequested}" Margin="0,3,0,0" />
+        <CheckBox Content="Conversa minha resolvida" IsChecked="{Binding ThreadResolved}" Margin="0,3,0,0" />
+        <CheckBox Content="Review recebido (aprovado/mudanças)" IsChecked="{Binding ReviewReceived}" Margin="0,3,0,0" />
+        <CheckBox Content="CI/checks falharam" IsChecked="{Binding ChecksFailed}" Margin="0,3,0,0" />
+        <CheckBox Content="Conflito de merge" IsChecked="{Binding MergeConflict}" Margin="0,3,0,0" />
+        <CheckBox Content="Menções a mim" IsChecked="{Binding Mentioned}" Margin="0,3,0,0" />
+
+        <TextBlock Text="Geral" FontWeight="Bold" Margin="0,16,0,6" />
+        <CheckBox Content="Iniciar com o Windows" IsChecked="{Binding StartWithWindows}" Margin="0,3,0,0" />
+        <CheckBox Content="Som de notificação"
+                  IsChecked="{Binding NotificationSoundEnabled}" Margin="0,3,0,0"
+                  ToolTip="Toca o som escolhido por cima do que estiver tocando (a música só abaixa um pouco durante o aviso). Adicione .wav ou .mp3 na pasta audio\ do app para ampliar a lista." />
+        <StackPanel Orientation="Horizontal" Margin="24,6,0,0" IsEnabled="{Binding NotificationSoundEnabled}">
+            <ComboBox Width="220"
+                      ItemsSource="{Binding AvailableSounds}"
+                      SelectedItem="{Binding SelectedSound}" />
+            <Button Content="Ouvir" Command="{Binding PreviewSoundCommand}" Margin="8,0,0,0" />
+        </StackPanel>
+        <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+            <TextBlock Text="Tempo na tela: " VerticalAlignment="Center" />
+            <ComboBox Width="200"
+                      ItemsSource="{Binding DurationOptions}"
+                      SelectedIndex="{Binding DurationIndex}"
+                      ToolTip="O Windows só oferece estes dois tempos para notificações." />
+        </StackPanel>
+        <CheckBox Content="Horário silencioso (sem toasts; histórico continua)"
+                  IsChecked="{Binding QuietEnabled}" Margin="0,3,0,0" />
+        <StackPanel Orientation="Horizontal" Margin="24,6,0,0" IsEnabled="{Binding QuietEnabled}">
+            <TextBlock Text="De " VerticalAlignment="Center" />
+            <TextBox Width="74" Text="{Binding QuietStart}" />
+            <TextBlock Text=" até " VerticalAlignment="Center" />
+            <TextBox Width="74" Text="{Binding QuietEnd}" />
+        </StackPanel>
+
+        <TextBlock Text="Integrações" FontWeight="Bold" Margin="0,16,0,6" />
+        <TextBlock Text="{Binding AuthSourceText}" TextWrapping="Wrap"
+                   Foreground="{DynamicResource Brush.TextMuted}" />
+        <Button Content="Configurar integrações…" Command="{Binding ConfigureTokenCommand}"
+                HorizontalAlignment="Left" Margin="0,8,0,0" />
+
+        <TextBlock Text="{Binding ValidationMessage}"
+                   Foreground="{DynamicResource Brush.Danger}"
+                   Margin="0,12,0,0" TextWrapping="Wrap" />
+
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,18,0,0">
+            <Button Content="Salvar" Command="{Binding SaveCommand}" Width="96" Style="{StaticResource PrimaryButton}" />
+            <Button Content="Cancelar" Click="OnCancel" Width="96" Margin="8,0,0,0" />
+        </StackPanel>
+    </StackPanel>
+</Window>

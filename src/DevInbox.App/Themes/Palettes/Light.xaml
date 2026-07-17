@@ -1,0 +1,20 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- Claro (GitHub Light) -->
+    <SolidColorBrush x:Key="Brush.Canvas" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="Brush.Surface" Color="#F6F8FA" />
+    <SolidColorBrush x:Key="Brush.Border" Color="#D0D7DE" />
+    <SolidColorBrush x:Key="Brush.Text" Color="#1F2328" />
+    <SolidColorBrush x:Key="Brush.TextMuted" Color="#656D76" />
+    <SolidColorBrush x:Key="Brush.Accent" Color="#0969DA" />
+    <SolidColorBrush x:Key="Brush.Danger" Color="#CF222E" />
+    <SolidColorBrush x:Key="Brush.Success" Color="#1A7F37" />
+    <SolidColorBrush x:Key="Brush.ButtonBg" Color="#F6F8FA" />
+    <SolidColorBrush x:Key="Brush.ButtonHover" Color="#EBEEF1" />
+    <SolidColorBrush x:Key="Brush.Primary" Color="#1F883D" />
+    <SolidColorBrush x:Key="Brush.PrimaryHover" Color="#1A7F37" />
+    <SolidColorBrush x:Key="Brush.SelectedRow" Color="#330969DA" />
+    <SolidColorBrush x:Key="Brush.TabUnderline" Color="#FD8C73" />
+    <SolidColorBrush x:Key="Brush.ScrollThumb" Color="#D0D7DE" />
+    <SolidColorBrush x:Key="Brush.ScrollThumbHover" Color="#AFB8C1" />
+</ResourceDictionary>

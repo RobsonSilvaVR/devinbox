@@ -1,0 +1,31 @@
+<Window x:Class="DevInbox.App.Windows.AboutWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Sobre — DevInbox"
+        Width="380" SizeToContent="Height"
+        ResizeMode="NoResize"
+        Style="{StaticResource GitHubWindow}"
+        Icon="/Assets/app.ico"
+        WindowStartupLocation="CenterScreen">
+    <StackPanel Margin="24" HorizontalAlignment="Center">
+        <Image Source="/Assets/logo-256.png" Width="64" Height="64" Margin="0,0,0,12"
+               RenderOptions.BitmapScalingMode="HighQuality" />
+        <TextBlock Text="DevInbox" FontSize="18" FontWeight="Bold" HorizontalAlignment="Center" />
+        <TextBlock x:Name="VersionText" HorizontalAlignment="Center" Margin="0,4,0,0"
+                   Foreground="{DynamicResource Brush.TextMuted}" />
+
+        <TextBlock Text="Desenvolvido por Rob Silva" HorizontalAlignment="Center" Margin="0,18,0,0" />
+
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,10,0,0">
+            <TextBlock>
+                <Hyperlink NavigateUri="https://github.com/RobsonSilvaVR" RequestNavigate="OnNavigate">GitHub · RobsonSilvaVR</Hyperlink>
+            </TextBlock>
+            <TextBlock Text="   •   " Foreground="{DynamicResource Brush.TextMuted}" />
+            <TextBlock>
+                <Hyperlink NavigateUri="https://instagram.com/imrob.dev" RequestNavigate="OnNavigate">Instagram · @imrob.dev</Hyperlink>
+            </TextBlock>
+        </StackPanel>
+
+        <Button Content="Fechar" Click="OnClose" Width="96" Margin="0,22,0,0" HorizontalAlignment="Center" />
+    </StackPanel>
+</Window>

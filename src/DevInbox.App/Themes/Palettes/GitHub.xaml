@@ -1,0 +1,20 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- GitHub Dark (tema padrão) -->
+    <SolidColorBrush x:Key="Brush.Canvas" Color="#0D1117" />
+    <SolidColorBrush x:Key="Brush.Surface" Color="#161B22" />
+    <SolidColorBrush x:Key="Brush.Border" Color="#30363D" />
+    <SolidColorBrush x:Key="Brush.Text" Color="#E6EDF3" />
+    <SolidColorBrush x:Key="Brush.TextMuted" Color="#8B949E" />
+    <SolidColorBrush x:Key="Brush.Accent" Color="#58A6FF" />
+    <SolidColorBrush x:Key="Brush.Danger" Color="#F85149" />
+    <SolidColorBrush x:Key="Brush.Success" Color="#3FB950" />
+    <SolidColorBrush x:Key="Brush.ButtonBg" Color="#21262D" />
+    <SolidColorBrush x:Key="Brush.ButtonHover" Color="#30363D" />
+    <SolidColorBrush x:Key="Brush.Primary" Color="#238636" />
+    <SolidColorBrush x:Key="Brush.PrimaryHover" Color="#2EA043" />
+    <SolidColorBrush x:Key="Brush.SelectedRow" Color="#331F6FEB" />
+    <SolidColorBrush x:Key="Brush.TabUnderline" Color="#F78166" />
+    <SolidColorBrush x:Key="Brush.ScrollThumb" Color="#30363D" />
+    <SolidColorBrush x:Key="Brush.ScrollThumbHover" Color="#484F58" />
+</ResourceDictionary>

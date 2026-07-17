@@ -1,0 +1,20 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- JetBrains Darcula -->
+    <SolidColorBrush x:Key="Brush.Canvas" Color="#2B2B2B" />
+    <SolidColorBrush x:Key="Brush.Surface" Color="#3C3F41" />
+    <SolidColorBrush x:Key="Brush.Border" Color="#4E5254" />
+    <SolidColorBrush x:Key="Brush.Text" Color="#A9B7C6" />
+    <SolidColorBrush x:Key="Brush.TextMuted" Color="#808080" />
+    <SolidColorBrush x:Key="Brush.Accent" Color="#6897BB" />
+    <SolidColorBrush x:Key="Brush.Danger" Color="#FF6B68" />
+    <SolidColorBrush x:Key="Brush.Success" Color="#6A8759" />
+    <SolidColorBrush x:Key="Brush.ButtonBg" Color="#4C5052" />
+    <SolidColorBrush x:Key="Brush.ButtonHover" Color="#5C6164" />
+    <SolidColorBrush x:Key="Brush.Primary" Color="#365880" />
+    <SolidColorBrush x:Key="Brush.PrimaryHover" Color="#436B9E" />
+    <SolidColorBrush x:Key="Brush.SelectedRow" Color="#55214283" />
+    <SolidColorBrush x:Key="Brush.TabUnderline" Color="#CC7832" />
+    <SolidColorBrush x:Key="Brush.ScrollThumb" Color="#595B5D" />
+    <SolidColorBrush x:Key="Brush.ScrollThumbHover" Color="#6E7173" />
+</ResourceDictionary>

@@ -1,0 +1,20 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- Solarized Light (Ethan Schoonover) — claro, quente e suave -->
+    <SolidColorBrush x:Key="Brush.Canvas" Color="#FDF6E3" />
+    <SolidColorBrush x:Key="Brush.Surface" Color="#EEE8D5" />
+    <SolidColorBrush x:Key="Brush.Border" Color="#D3CBB3" />
+    <SolidColorBrush x:Key="Brush.Text" Color="#586E75" />
+    <SolidColorBrush x:Key="Brush.TextMuted" Color="#839496" />
+    <SolidColorBrush x:Key="Brush.Accent" Color="#268BD2" />
+    <SolidColorBrush x:Key="Brush.Danger" Color="#DC322F" />
+    <SolidColorBrush x:Key="Brush.Success" Color="#859900" />
+    <SolidColorBrush x:Key="Brush.ButtonBg" Color="#EEE8D5" />
+    <SolidColorBrush x:Key="Brush.ButtonHover" Color="#E3DCC6" />
+    <SolidColorBrush x:Key="Brush.Primary" Color="#268BD2" />
+    <SolidColorBrush x:Key="Brush.PrimaryHover" Color="#1A6FA8" />
+    <SolidColorBrush x:Key="Brush.SelectedRow" Color="#33268BD2" />
+    <SolidColorBrush x:Key="Brush.TabUnderline" Color="#CB4B16" />
+    <SolidColorBrush x:Key="Brush.ScrollThumb" Color="#D3CBB3" />
+    <SolidColorBrush x:Key="Brush.ScrollThumbHover" Color="#C0B79A" />
+</ResourceDictionary>
