@@ -105,7 +105,7 @@ public sealed partial class HistoryViewModel : ObservableObject, IDisposable
         HistoryRepoFilter = AllRepos;
         HistoryTypeFilter = AllTypes;
         ReadFilter = ReadOptions[0];
-        PeriodFilter = PeriodOptions[0];
+        PeriodFilter = PeriodOptions[2]; // "Últimos 7 dias" como padrão
         PendingHeader = "Pendências";
 
         _pendingView = CollectionViewSource.GetDefaultView(Pending);
@@ -195,7 +195,8 @@ public sealed partial class HistoryViewModel : ObservableObject, IDisposable
 
     private void RefreshPending()
     {
-        if (_loading)
+        // Os filtros são inicializados no construtor antes das views existirem; ignora até lá.
+        if (_loading || _pendingView is null)
             return;
 
         _pendingView.Refresh();
@@ -204,7 +205,7 @@ public sealed partial class HistoryViewModel : ObservableObject, IDisposable
 
     private void RefreshHistory()
     {
-        if (!_loading)
+        if (!_loading && _itemsView is not null)
             _itemsView.Refresh();
     }
 
