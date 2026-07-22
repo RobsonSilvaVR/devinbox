@@ -24,7 +24,7 @@ public static class EventDisplay
     public static string Label(string eventType, string? subtype) => eventType switch
     {
         nameof(NotificationEventType.NewComment) => "Comentário",
-        nameof(NotificationEventType.ReviewRequested) => "Review pedido",
+        nameof(NotificationEventType.ReviewRequested) => "Pedido de Review",
         nameof(NotificationEventType.ThreadResolved) => "Conversa resolvida",
         nameof(NotificationEventType.ReviewReceived) => subtype switch
         {
@@ -35,6 +35,8 @@ public static class EventDisplay
         nameof(NotificationEventType.ChecksFailed) => "Checks falharam",
         nameof(NotificationEventType.MergeConflict) => "Conflito",
         nameof(NotificationEventType.Mentioned) => "Menção",
+        nameof(NotificationEventType.MergeConflictResolved) => "Conflito resolvido",
+        nameof(NotificationEventType.ChecksRecovered) => "Checks OK",
         _ => eventType,
     };
 }

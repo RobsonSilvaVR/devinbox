@@ -21,6 +21,7 @@ public sealed class Database
           head_oid TEXT,
           check_rollup TEXT,
           conflict_notified INTEGER NOT NULL DEFAULT 0,
+          checks_failed_notified INTEGER NOT NULL DEFAULT 0,
           is_open INTEGER NOT NULL DEFAULT 1,
           closed_at TEXT);
 
@@ -56,7 +57,7 @@ public sealed class Database
         CREATE INDEX IF NOT EXISTS ix_notifications_unread ON notifications(is_read);
         """;
 
-    private const int CurrentSchemaVersion = 3;
+    private const int CurrentSchemaVersion = 4;
 
     public Database(string databasePath)
     {
@@ -87,6 +88,12 @@ public sealed class Database
         {
             // Autor da conversa, exibido na aba de pendentes; preenchido no próximo poll.
             TryExecute(connection, "ALTER TABLE thread_state ADD COLUMN author TEXT");
+        }
+
+        if (version < 4)
+        {
+            // Rastreia checks em falha (para detectar recuperação, análogo a conflict_notified).
+            TryExecute(connection, "ALTER TABLE pr_state ADD COLUMN checks_failed_notified INTEGER NOT NULL DEFAULT 0");
         }
 
         Execute(connection, $"PRAGMA user_version = {CurrentSchemaVersion}");

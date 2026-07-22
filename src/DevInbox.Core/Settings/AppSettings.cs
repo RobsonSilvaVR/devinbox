@@ -52,6 +52,9 @@ public sealed class EventToggles
         NotificationEventType.ChecksFailed => ChecksFailed,
         NotificationEventType.MergeConflict => MergeConflict,
         NotificationEventType.Mentioned => Mentioned,
+        // Resoluções seguem o mesmo toggle do evento de origem.
+        NotificationEventType.MergeConflictResolved => MergeConflict,
+        NotificationEventType.ChecksRecovered => ChecksFailed,
         _ => true,
     };
 }

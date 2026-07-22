@@ -9,15 +9,21 @@ public sealed record DiffDbState(
     IReadOnlySet<string> SeenItemIds,
     IReadOnlyDictionary<string, ThreadDbState> KnownThreads);
 
-public sealed record UnresolvedThread(
-    string ThreadId,
+public enum PendingKind
+{
+    Conversation,
+    Conflict,
+    Checks,
+}
+
+public sealed record PendingItem(
+    PendingKind Kind,
     string Repo,
     int PrNumber,
     string PrTitle,
+    string? Detail,
     string? Url,
-    string? Preview,
-    string? Author,
-    bool IParticipated);
+    string? Author);
 
 public sealed class PrStateRepository(Database database)
 {
@@ -34,7 +40,7 @@ public sealed class PrStateRepository(Database database)
         {
             command.CommandText = """
                 SELECT pr_id, repo, number, title, url, is_mine, is_review_requested,
-                       mergeable, head_oid, check_rollup, conflict_notified, is_open
+                       mergeable, head_oid, check_rollup, conflict_notified, checks_failed_notified, is_open
                 FROM pr_state
                 """;
             using var reader = command.ExecuteReader();
@@ -52,7 +58,8 @@ public sealed class PrStateRepository(Database database)
                     reader.IsDBNull(8) ? null : reader.GetString(8),
                     reader.IsDBNull(9) ? null : reader.GetString(9),
                     reader.GetInt64(10) != 0,
-                    reader.GetInt64(11) != 0);
+                    reader.GetInt64(11) != 0,
+                    reader.GetInt64(12) != 0);
                 prs[state.PrId] = state;
             }
         }
@@ -100,9 +107,9 @@ public sealed class PrStateRepository(Database database)
             command.CommandText = """
                 INSERT INTO pr_state
                   (pr_id, repo, number, title, url, is_mine, is_review_requested,
-                   mergeable, head_oid, check_rollup, conflict_notified, is_open, closed_at)
+                   mergeable, head_oid, check_rollup, conflict_notified, checks_failed_notified, is_open, closed_at)
                 VALUES (@prId, @repo, @number, @title, @url, @isMine, @isReviewRequested,
-                        @mergeable, @headOid, @checkRollup, @conflictNotified, 1, NULL)
+                        @mergeable, @headOid, @checkRollup, @conflictNotified, @checksFailedNotified, 1, NULL)
                 ON CONFLICT(pr_id) DO UPDATE SET
                   repo = excluded.repo,
                   number = excluded.number,
@@ -114,6 +121,7 @@ public sealed class PrStateRepository(Database database)
                   head_oid = excluded.head_oid,
                   check_rollup = excluded.check_rollup,
                   conflict_notified = excluded.conflict_notified,
+                  checks_failed_notified = excluded.checks_failed_notified,
                   is_open = 1,
                   closed_at = NULL
                 """;
@@ -128,6 +136,7 @@ public sealed class PrStateRepository(Database database)
             command.Parameters.AddWithValue("@headOid", (object?)pr.HeadOid ?? DBNull.Value);
             command.Parameters.AddWithValue("@checkRollup", (object?)pr.CheckRollup ?? DBNull.Value);
             command.Parameters.AddWithValue("@conflictNotified", pr.ConflictNotified ? 1 : 0);
+            command.Parameters.AddWithValue("@checksFailedNotified", pr.ChecksFailedNotified ? 1 : 0);
             command.ExecuteNonQuery();
         }
 
@@ -206,34 +215,80 @@ public sealed class PrStateRepository(Database database)
         command.ExecuteNonQuery();
     }
 
-    public IReadOnlyList<UnresolvedThread> GetUnresolvedThreads()
+    /// <summary>
+    /// Itens que exigem ação minha, derivados do estado atual dos PRs: conversas de review não
+    /// resolvidas, conflito de merge e checks/CI em falha. Uma entrada por motivo.
+    /// </summary>
+    public IReadOnlyList<PendingItem> GetPendingItems()
     {
         using var connection = _database.OpenConnection();
-        using var command = connection.CreateCommand();
-        command.CommandText = """
-            SELECT t.thread_id, p.repo, p.number, COALESCE(p.title, ''), t.url, t.preview, t.author, t.i_participated
-            FROM thread_state t
-            JOIN pr_state p ON p.pr_id = t.pr_id
-            WHERE t.is_resolved = 0 AND p.is_open = 1 AND (p.is_mine = 1 OR t.i_participated = 1)
-            ORDER BY p.repo, p.number DESC
-            """;
+        var items = new List<PendingItem>();
 
-        var threads = new List<UnresolvedThread>();
-        using var reader = command.ExecuteReader();
-        while (reader.Read())
+        using (var command = connection.CreateCommand())
         {
-            threads.Add(new UnresolvedThread(
-                reader.GetString(0),
-                reader.GetString(1),
-                reader.GetInt32(2),
-                reader.GetString(3),
-                reader.IsDBNull(4) ? null : reader.GetString(4),
-                reader.IsDBNull(5) ? null : reader.GetString(5),
-                reader.IsDBNull(6) ? null : reader.GetString(6),
-                reader.GetInt64(7) != 0));
+            command.CommandText = """
+                SELECT p.repo, p.number, COALESCE(p.title, ''), t.url, t.preview, t.author
+                FROM thread_state t
+                JOIN pr_state p ON p.pr_id = t.pr_id
+                WHERE t.is_resolved = 0 AND p.is_open = 1 AND (p.is_mine = 1 OR t.i_participated = 1)
+                ORDER BY p.repo, p.number DESC
+                """;
+            using var reader = command.ExecuteReader();
+            while (reader.Read())
+                items.Add(new PendingItem(
+                    PendingKind.Conversation,
+                    reader.GetString(0),
+                    reader.GetInt32(1),
+                    reader.GetString(2),
+                    reader.IsDBNull(4) ? null : reader.GetString(4),
+                    reader.IsDBNull(3) ? null : reader.GetString(3),
+                    reader.IsDBNull(5) ? null : reader.GetString(5)));
         }
 
-        return threads;
+        using (var command = connection.CreateCommand())
+        {
+            command.CommandText = """
+                SELECT repo, number, COALESCE(title, ''), url
+                FROM pr_state
+                WHERE is_open = 1 AND is_mine = 1 AND mergeable = 'CONFLICTING'
+                ORDER BY repo, number DESC
+                """;
+            using var reader = command.ExecuteReader();
+            while (reader.Read())
+                items.Add(new PendingItem(
+                    PendingKind.Conflict,
+                    reader.GetString(0),
+                    reader.GetInt32(1),
+                    reader.GetString(2),
+                    "Conflito com a base",
+                    reader.IsDBNull(3) ? null : reader.GetString(3),
+                    Author: null));
+        }
+
+        using (var command = connection.CreateCommand())
+        {
+            command.CommandText = """
+                SELECT repo, number, COALESCE(title, ''), url
+                FROM pr_state
+                WHERE is_open = 1 AND is_mine = 1 AND check_rollup IN ('FAILURE', 'ERROR')
+                ORDER BY repo, number DESC
+                """;
+            using var reader = command.ExecuteReader();
+            while (reader.Read())
+            {
+                var url = reader.IsDBNull(3) ? null : reader.GetString(3);
+                items.Add(new PendingItem(
+                    PendingKind.Checks,
+                    reader.GetString(0),
+                    reader.GetInt32(1),
+                    reader.GetString(2),
+                    "CI/checks falhando",
+                    url is null ? null : $"{url}/checks",
+                    Author: null));
+            }
+        }
+
+        return items;
     }
 
     public bool IsTrackedOpenPr(string repo, int number)

@@ -14,6 +14,7 @@ public sealed record PrDbState(
     string? HeadOid,
     string? CheckRollup,
     bool ConflictNotified,
+    bool ChecksFailedNotified,
     bool IsOpen);
 
 public sealed record ThreadDbState(
@@ -38,6 +39,7 @@ public sealed record DiffInput(
 
 public sealed record DiffResult(
     IReadOnlyList<NotificationEvent> Events,
+    IReadOnlyList<NotificationEvent> ResolutionEvents,
     IReadOnlyList<PrDbState> PrUpserts,
     IReadOnlyList<SeenItem> NewSeenItems,
     IReadOnlyList<ThreadDbState> ThreadUpserts,
