@@ -113,7 +113,7 @@ public class StateDifferTests
     }
 
     [Fact]
-    public void ThreadResolvedTransition_Fires()
+    public void ThreadResolvedTransition_RecordsResolutionNotEvent()
     {
         var snapshot = Snapshot(mine: [Pr(threads: [Thread("t1", isResolved: true)])]);
 
@@ -123,7 +123,8 @@ public class StateDifferTests
             seen: ["t1-c1"],
             threads: [new ThreadDbState("t1", "PR_1", IsResolved: false, IParticipated: true)]));
 
-        var notification = Assert.Single(result.Events);
+        Assert.Empty(result.Events);
+        var notification = Assert.Single(result.ResolutionEvents);
         Assert.Equal(NotificationEventType.ThreadResolved, notification.Type);
         Assert.Equal("resolved:t1", notification.DedupKey);
     }
@@ -136,6 +137,58 @@ public class StateDifferTests
         var result = StateDiffer.Diff(Input(snapshot, knownPrs: [Known()], seen: ["t1-c1"]));
 
         Assert.Empty(result.Events);
+        Assert.Empty(result.ResolutionEvents);
+    }
+
+    [Fact]
+    public void ConflictResolved_RecordsResolutionAndClearsFlag()
+    {
+        var snapshot = Snapshot(mine: [Pr(mergeable: "MERGEABLE")]);
+
+        var result = StateDiffer.Diff(Input(snapshot, knownPrs:
+            [Known(mergeable: "CONFLICTING", conflictNotified: true)]));
+
+        Assert.Empty(result.Events);
+        var resolution = Assert.Single(result.ResolutionEvents);
+        Assert.Equal(NotificationEventType.MergeConflictResolved, resolution.Type);
+        Assert.False(Assert.Single(result.PrUpserts).ConflictNotified);
+    }
+
+    [Fact]
+    public void ChecksFailure_MarksChecksFailedNotified()
+    {
+        var snapshot = Snapshot(mine: [Pr(rollup: "FAILURE",
+            failing: [new CheckContextInfo("build", "https://ci.example/1")])]);
+
+        var result = StateDiffer.Diff(Input(snapshot, knownPrs: [Known(rollup: "PENDING")]));
+
+        Assert.True(Assert.Single(result.PrUpserts).ChecksFailedNotified);
+    }
+
+    [Fact]
+    public void ChecksPendingAfterFailure_KeepsTrackingWithoutResolution()
+    {
+        var snapshot = Snapshot(mine: [Pr(rollup: "PENDING")]);
+
+        var result = StateDiffer.Diff(Input(snapshot, knownPrs:
+            [Known(rollup: "PENDING", checksFailedNotified: true)]));
+
+        Assert.Empty(result.ResolutionEvents);
+        Assert.True(Assert.Single(result.PrUpserts).ChecksFailedNotified);
+    }
+
+    [Fact]
+    public void ChecksRecovered_RecordsResolutionAndClearsFlag()
+    {
+        var snapshot = Snapshot(mine: [Pr(rollup: "SUCCESS")]);
+
+        var result = StateDiffer.Diff(Input(snapshot, knownPrs:
+            [Known(rollup: "FAILURE", checksFailedNotified: true)]));
+
+        Assert.Empty(result.Events);
+        var resolution = Assert.Single(result.ResolutionEvents);
+        Assert.Equal(NotificationEventType.ChecksRecovered, resolution.Type);
+        Assert.False(Assert.Single(result.PrUpserts).ChecksFailedNotified);
     }
 
     [Fact]
@@ -327,9 +380,10 @@ public class StateDifferTests
         string mergeable = "MERGEABLE",
         string? headOid = "oid1",
         string? rollup = null,
-        bool conflictNotified = false)
+        bool conflictNotified = false,
+        bool checksFailedNotified = false)
         => new(id, "org/repo", 1, "Título", "url", isMine, isReviewRequested,
-            mergeable, headOid, rollup, conflictNotified, IsOpen: true);
+            mergeable, headOid, rollup, conflictNotified, checksFailedNotified, IsOpen: true);
 
     private static CommentInfo Comment(string id, string author, string body = "corpo do comentário")
         => new(id, $"https://github.com/org/repo/pull/1#issuecomment-{id}", author, body, DateTimeOffset.UtcNow);

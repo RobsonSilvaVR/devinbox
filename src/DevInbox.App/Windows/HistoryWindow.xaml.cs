@@ -24,8 +24,8 @@ public partial class HistoryWindow : Window
         WindowStyler.ApplyChrome(this);
         Closed += (_, _) => _viewModel.Dispose();
 
-        // Threads pendentes é a aba principal; sem pendências, abre direto no histórico.
-        MainTabs.SelectedIndex = _viewModel.Threads.Count > 0 ? 0 : 1;
+        // Pendências é a aba principal; sem pendências, abre direto no histórico.
+        MainTabs.SelectedIndex = _viewModel.Pending.Count > 0 ? 0 : 1;
     }
 
     private void OnItemDoubleClick(object sender, MouseButtonEventArgs e)
@@ -34,9 +34,9 @@ public partial class HistoryWindow : Window
             _viewModel.Open(item);
     }
 
-    private void OnThreadDoubleClick(object sender, MouseButtonEventArgs e)
+    private void OnPendingDoubleClick(object sender, MouseButtonEventArgs e)
     {
-        if ((sender as ListView)?.SelectedItem is ThreadItemViewModel thread)
-            _viewModel.OpenThread(thread);
+        if ((sender as ListView)?.SelectedItem is PendingItemViewModel pending)
+            _viewModel.OpenPending(pending);
     }
 }

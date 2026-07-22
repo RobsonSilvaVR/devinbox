@@ -35,6 +35,8 @@ public static class EventDisplay
         nameof(NotificationEventType.ChecksFailed) => "Checks falharam",
         nameof(NotificationEventType.MergeConflict) => "Conflito",
         nameof(NotificationEventType.Mentioned) => "Menção",
+        nameof(NotificationEventType.MergeConflictResolved) => "Conflito resolvido",
+        nameof(NotificationEventType.ChecksRecovered) => "Checks OK",
         _ => eventType,
     };
 }

@@ -9,6 +9,8 @@ public enum NotificationEventType
     ChecksFailed,
     MergeConflict,
     Mentioned,
+    MergeConflictResolved,
+    ChecksRecovered,
 }
 
 public sealed record NotificationEvent(

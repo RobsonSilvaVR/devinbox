@@ -2,34 +2,40 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="DevInbox"
-        Width="880" Height="520"
-        MinWidth="720" MinHeight="360"
+        Width="920" Height="540"
+        MinWidth="780" MinHeight="380"
         Style="{StaticResource GitHubWindow}"
         Icon="/Assets/app.ico"
         WindowStartupLocation="CenterScreen">
     <TabControl x:Name="MainTabs" Margin="12">
-        <TabItem Header="{Binding ThreadsHeader}">
+        <TabItem Header="{Binding PendingHeader}">
             <DockPanel Margin="0,10,0,0">
-                <TextBlock DockPanel.Dock="Top" Margin="0,0,0,10"
-                           Text="Conversas de review ainda abertas nos seus PRs (ou em que você participa). Ao serem resolvidas, saem desta lista e o evento vai para o histórico."
-                           TextWrapping="Wrap"
-                           Foreground="{DynamicResource Brush.TextMuted}" />
-                <ListView ItemsSource="{Binding Threads}" MouseDoubleClick="OnThreadDoubleClick">
+                <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,10">
+                    <TextBlock Text="Repositório:" VerticalAlignment="Center" Margin="0,0,6,0"
+                               Foreground="{DynamicResource Brush.TextMuted}" />
+                    <ComboBox Width="190" ItemsSource="{Binding PendingRepoOptions}"
+                              SelectedItem="{Binding PendingRepoFilter}" />
+                    <TextBlock Text="Tipo:" VerticalAlignment="Center" Margin="14,0,6,0"
+                               Foreground="{DynamicResource Brush.TextMuted}" />
+                    <ComboBox Width="140" ItemsSource="{Binding PendingTypeOptions}"
+                              SelectedItem="{Binding PendingTypeFilter}" />
+                </StackPanel>
+                <ListView ItemsSource="{Binding PendingView}" MouseDoubleClick="OnPendingDoubleClick">
                     <ListView.View>
                         <GridView>
+                            <GridViewColumn Header="Tipo" Width="90" DisplayMemberBinding="{Binding TypeLabel}" />
                             <GridViewColumn Header="Repositório" Width="165" DisplayMemberBinding="{Binding Repo}" />
                             <GridViewColumn Header="PR" Width="55" DisplayMemberBinding="{Binding PrLabel}" />
-                            <GridViewColumn Header="Comentário" Width="380">
+                            <GridViewColumn Header="Detalhe" Width="360">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate>
-                                        <TextBlock Text="{Binding Preview}"
+                                        <TextBlock Text="{Binding Detail}"
                                                    TextTrimming="CharacterEllipsis"
                                                    ToolTip="{Binding PrTitle}" />
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
                             <GridViewColumn Header="Autor" Width="100" DisplayMemberBinding="{Binding Author}" />
-                            <GridViewColumn Header="Origem" Width="90" DisplayMemberBinding="{Binding Participation}" />
                         </GridView>
                     </ListView.View>
                 </ListView>
@@ -40,12 +46,19 @@
                 <DockPanel DockPanel.Dock="Top" Margin="0,0,0,10">
                     <Button DockPanel.Dock="Right"
                             Content="Marcar todas como lidas"
-                            Command="{Binding MarkAllReadCommand}" />
-                    <TextBlock Text="Clique duplo em um item abre o PR no navegador e o marca como lido."
-                               VerticalAlignment="Center"
-                               Foreground="{DynamicResource Brush.TextMuted}" />
+                            Command="{Binding MarkAllReadCommand}" Margin="8,0,0,0" />
+                    <StackPanel Orientation="Horizontal">
+                        <ComboBox Width="170" ItemsSource="{Binding HistoryRepoOptions}"
+                                  SelectedItem="{Binding HistoryRepoFilter}" />
+                        <ComboBox Width="150" Margin="8,0,0,0" ItemsSource="{Binding HistoryTypeOptions}"
+                                  SelectedItem="{Binding HistoryTypeFilter}" />
+                        <ComboBox Width="110" Margin="8,0,0,0" ItemsSource="{Binding ReadOptions}"
+                                  SelectedItem="{Binding ReadFilter}" />
+                        <ComboBox Width="150" Margin="8,0,0,0" ItemsSource="{Binding PeriodOptions}"
+                                  SelectedItem="{Binding PeriodFilter}" />
+                    </StackPanel>
                 </DockPanel>
-                <ListView ItemsSource="{Binding Items}" MouseDoubleClick="OnItemDoubleClick">
+                <ListView ItemsSource="{Binding ItemsView}" MouseDoubleClick="OnItemDoubleClick">
                     <ListView.ItemContainerStyle>
                         <Style TargetType="ListViewItem" BasedOn="{StaticResource {x:Type ListViewItem}}">
                             <Style.Triggers>
@@ -53,7 +66,7 @@
                                     <Setter Property="Background" Value="#2E1F6FEB" />
                                 </DataTrigger>
                                 <DataTrigger Binding="{Binding IsRead}" Value="True">
-                                    <Setter Property="Foreground" Value="{StaticResource Brush.TextMuted}" />
+                                    <Setter Property="Foreground" Value="{DynamicResource Brush.TextMuted}" />
                                 </DataTrigger>
                             </Style.Triggers>
                         </Style>

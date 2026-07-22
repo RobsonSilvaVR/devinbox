@@ -9,6 +9,7 @@ public static class StateDiffer
     public static DiffResult Diff(DiffInput input)
     {
         var events = new List<NotificationEvent>();
+        var resolutionEvents = new List<NotificationEvent>();
         var prUpserts = new List<PrDbState>();
         var newSeenItems = new List<SeenItem>();
         var threadUpserts = new List<ThreadDbState>();
@@ -24,16 +25,16 @@ public static class StateDiffer
 
             DiffComments(input, pr, baseline, events, newSeenItems);
             DiffReviews(input, pr, baseline, events, newSeenItems);
-            DiffThreads(input, pr, baseline, events, threadUpserts);
-            DiffChecks(pr, known, baseline, events, input.Now);
-            var (mergeable, conflictNotified) = DiffMergeable(pr, known, baseline, events, input.Now);
+            DiffThreads(input, pr, baseline, resolutionEvents, threadUpserts);
+            var checksFailedNotified = DiffChecks(pr, known, baseline, events, resolutionEvents, input.Now);
+            var (mergeable, conflictNotified) = DiffMergeable(pr, known, baseline, events, resolutionEvents, input.Now);
 
             prUpserts.Add(new PrDbState(
                 pr.Id, pr.Repo, pr.Number, pr.Title, pr.Url,
                 IsMine: true,
                 IsReviewRequested: reviewRequestedIds.Contains(pr.Id),
                 mergeable, pr.HeadOid, pr.CheckRollupState,
-                conflictNotified,
+                conflictNotified, checksFailedNotified,
                 IsOpen: true));
         }
 
@@ -62,6 +63,7 @@ public static class StateDiffer
                 known?.HeadOid,
                 known?.CheckRollup,
                 known?.ConflictNotified ?? false,
+                known?.ChecksFailedNotified ?? false,
                 IsOpen: true));
         }
 
@@ -71,7 +73,7 @@ public static class StateDiffer
             .Select(pr => pr.PrId)
             .ToList();
 
-        return new DiffResult(events, prUpserts, newSeenItems, threadUpserts, closedPrIds);
+        return new DiffResult(events, resolutionEvents, prUpserts, newSeenItems, threadUpserts, closedPrIds);
     }
 
     private static void DiffComments(
@@ -138,7 +140,7 @@ public static class StateDiffer
 
     private static void DiffThreads(
         DiffInput input, PrSnapshot pr, bool baseline,
-        List<NotificationEvent> events, List<ThreadDbState> threadUpserts)
+        List<NotificationEvent> resolutionEvents, List<ThreadDbState> threadUpserts)
     {
         foreach (var thread in pr.Threads)
         {
@@ -156,7 +158,8 @@ public static class StateDiffer
             if (baseline || known is null || known.IsResolved || !thread.IsResolved)
                 continue;
 
-            events.Add(new NotificationEvent(
+            // Resolução: sai da aba de pendências e vai ao histórico já como lida (canal silencioso).
+            resolutionEvents.Add(new NotificationEvent(
                 NotificationEventType.ThreadResolved,
                 pr.Repo, pr.Number, pr.Title,
                 thread.Comments.FirstOrDefault()?.Url is { Length: > 0 } url ? url : pr.Url,
@@ -166,33 +169,55 @@ public static class StateDiffer
         }
     }
 
-    private static void DiffChecks(
+    /// <summary>Diferencia o estado dos checks e devolve se o PR permanece com checks em falha rastreados.</summary>
+    private static bool DiffChecks(
         PrSnapshot pr, PrDbState? known, bool baseline,
-        List<NotificationEvent> events, DateTimeOffset now)
+        List<NotificationEvent> events, List<NotificationEvent> resolutionEvents, DateTimeOffset now)
     {
-        var isFailure = pr.CheckRollupState is "FAILURE" or "ERROR";
-        if (!isFailure)
-            return;
+        var rollup = pr.CheckRollupState;
+        var wasNotified = known?.ChecksFailedNotified ?? false;
 
-        // Rollup anterior só vale para o mesmo head; push novo zera o rastreio.
-        var previousRollup = known?.HeadOid == pr.HeadOid ? known?.CheckRollup : null;
-        var wasFailure = previousRollup is "FAILURE" or "ERROR";
-        if (baseline || wasFailure)
-            return;
+        if (rollup is "FAILURE" or "ERROR")
+        {
+            // Rollup anterior só vale para o mesmo head; push novo zera o rastreio e re-notifica.
+            var previousRollup = known?.HeadOid == pr.HeadOid ? known?.CheckRollup : null;
+            var wasFailureSameHead = previousRollup is "FAILURE" or "ERROR";
+            if (!baseline && !wasFailureSameHead)
+            {
+                var failing = pr.FailingChecks.FirstOrDefault();
+                events.Add(new NotificationEvent(
+                    NotificationEventType.ChecksFailed,
+                    pr.Repo, pr.Number, pr.Title,
+                    failing?.DetailsUrl ?? $"{pr.Url}/checks",
+                    DedupKey: $"checks:{pr.Id}:{pr.HeadOid ?? "-"}",
+                    now,
+                    BodyPreview: failing is null ? null : $"Check com falha: {failing.Name}"));
+            }
 
-        var failing = pr.FailingChecks.FirstOrDefault();
-        events.Add(new NotificationEvent(
-            NotificationEventType.ChecksFailed,
-            pr.Repo, pr.Number, pr.Title,
-            failing?.DetailsUrl ?? $"{pr.Url}/checks",
-            DedupKey: $"checks:{pr.Id}:{pr.HeadOid ?? "-"}",
-            now,
-            BodyPreview: failing is null ? null : $"Check com falha: {failing.Name}"));
+            return true;
+        }
+
+        if (rollup == "SUCCESS")
+        {
+            // Recuperou depois de ter falhado: registra no histórico como lido (canal silencioso).
+            if (!baseline && wasNotified)
+                resolutionEvents.Add(new NotificationEvent(
+                    NotificationEventType.ChecksRecovered,
+                    pr.Repo, pr.Number, pr.Title,
+                    $"{pr.Url}/checks",
+                    DedupKey: $"checks-ok:{pr.Id}:{pr.HeadOid ?? "-"}",
+                    now));
+
+            return false;
+        }
+
+        // Estados transitórios (PENDING/EXPECTED/null): preserva o rastreamento anterior.
+        return wasNotified;
     }
 
     private static (string Mergeable, bool ConflictNotified) DiffMergeable(
         PrSnapshot pr, PrDbState? known, bool baseline,
-        List<NotificationEvent> events, DateTimeOffset now)
+        List<NotificationEvent> events, List<NotificationEvent> resolutionEvents, DateTimeOffset now)
     {
         // UNKNOWN é transitório (GitHub recalculando); preserva o último estado definitivo
         // para não perder a transição MERGEABLE→CONFLICTING que passa por UNKNOWN.
@@ -200,9 +225,20 @@ public static class StateDiffer
             ? known?.Mergeable ?? "UNKNOWN"
             : pr.Mergeable;
 
-        var conflictNotified = known?.ConflictNotified ?? false;
+        var wasConflictNotified = known?.ConflictNotified ?? false;
+        var conflictNotified = wasConflictNotified;
         if (mergeable == "MERGEABLE")
+        {
+            // Conflito resolvido: sai da aba de pendências e vai ao histórico como lido.
+            if (!baseline && wasConflictNotified)
+                resolutionEvents.Add(new NotificationEvent(
+                    NotificationEventType.MergeConflictResolved,
+                    pr.Repo, pr.Number, pr.Title, pr.Url,
+                    DedupKey: $"conflict-ok:{pr.Id}:{pr.HeadOid ?? "-"}",
+                    now));
+
             conflictNotified = false;
+        }
 
         if (!baseline
             && pr.Mergeable == "CONFLICTING"

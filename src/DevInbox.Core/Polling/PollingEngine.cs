@@ -89,6 +89,13 @@ public sealed class PollingEngine
             }
         }
 
+        // Resoluções (conversa/conflito/checks) entram no histórico já como lidas, sem toast.
+        foreach (var resolution in diff.ResolutionEvents)
+        {
+            if (toggles.IsEnabled(resolution.Type))
+                _notificationRepository.TryInsert(resolution, out _, read: true);
+        }
+
         created += await PollMentionsAsync(token, login, now, cancellationToken);
 
         if (now >= _nextPrune)

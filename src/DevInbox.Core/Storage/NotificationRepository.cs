@@ -22,16 +22,17 @@ public sealed class NotificationRepository(Database database)
     /// <summary>Disparado após qualquer mutação — badge da bandeja e janela de histórico se atualizam por aqui.</summary>
     public event Action? HistoryChanged;
 
-    public bool TryInsert(NotificationEvent notification, out long id)
+    public bool TryInsert(NotificationEvent notification, out long id, bool read = false)
     {
         using var connection = _database.OpenConnection();
         using (var command = connection.CreateCommand())
         {
             command.CommandText = """
                 INSERT OR IGNORE INTO notifications
-                  (event_type, subtype, repo, pr_number, title, body_preview, actor_login, url, created_at, dedup_key)
-                VALUES (@eventType, @subtype, @repo, @prNumber, @title, @bodyPreview, @actor, @url, @createdAt, @dedupKey)
+                  (event_type, subtype, repo, pr_number, title, body_preview, actor_login, url, created_at, dedup_key, is_read)
+                VALUES (@eventType, @subtype, @repo, @prNumber, @title, @bodyPreview, @actor, @url, @createdAt, @dedupKey, @isRead)
                 """;
+            command.Parameters.AddWithValue("@isRead", read ? 1 : 0);
             command.Parameters.AddWithValue("@eventType", notification.Type.ToString());
             command.Parameters.AddWithValue("@subtype", (object?)notification.Subtype ?? DBNull.Value);
             command.Parameters.AddWithValue("@repo", notification.Repo);
